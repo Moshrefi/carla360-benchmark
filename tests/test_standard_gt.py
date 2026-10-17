@@ -85,6 +85,78 @@ class ExportTests(unittest.TestCase):
     def export(self, **kw):
         return build_standard_gt(self.data,self.root/'Standard_GT',**kw)
 
+    def distinct_poses(self):
+        self.source[:,1] = np.arange(len(self.source))*10
+        np.savetxt(self.csv,self.source,delimiter=',',fmt='%.17g')
+        for path in self.data.glob('equi_*.png'):
+            index = int(path.stem.split('_')[1])
+            label = '_'.join(f'{v:.3f}' for v in self.source[index])
+            path.rename(self.data/f'equi_{index}_{label}.png')
+
+    def read_csv(self, path):
+        with open(path,newline='') as f:
+            return list(csv.DictReader(f))
+
+    def test_deleted_csv_row_recovers_by_pose(self):
+        self.distinct_poses()
+        np.savetxt(self.csv,self.source[1:],delimiter=',',fmt='%.17g')
+        out=self.export(pose_csv=self.csv)
+        rows=self.read_csv(out/'poses.csv')
+        self.assertEqual([int(r['source_csv_row']) for r in rows],[1,2,9])
+        self.assertEqual([r['match_method'] for r in rows],['pose_search']*3)
+        self.assertEqual([int(r['source_csv_line']) for r in rows],[2,3,10])
+
+    def test_reordered_csv_recovers_out_of_range_index(self):
+        self.distinct_poses()
+        np.savetxt(self.csv,self.source[[10,3,2]],delimiter=',',fmt='%.17g')
+        out=self.export(pose_csv=self.csv)
+        rows=self.read_csv(out/'poses.csv')
+        self.assertEqual([int(r['source_csv_row']) for r in rows],[2,1,0])
+
+    def test_skip_unmatched_and_continue(self):
+        self.distinct_poses()
+        self.source[3,0]=999
+        np.savetxt(self.csv,self.source,delimiter=',',fmt='%.17g')
+        out=self.export(pose_csv=self.csv,on_unmatched='skip')
+        self.assertEqual([int(r['source_frame_id']) for r in self.read_csv(out/'poses.csv')],[2,10])
+        report=self.read_csv(out/'matching_report.csv')
+        self.assertEqual([r['status'] for r in report],['matched','unmatched','matched'])
+        self.assertEqual(json.loads((out/'metadata.json').read_text())['matching']['skipped_count'],1)
+
+    def test_pose_mode_skips_ambiguity_even_when_index_matches(self):
+        self.distinct_poses()
+        self.source[1]=self.source[2]
+        np.savetxt(self.csv,self.source,delimiter=',',fmt='%.17g')
+        out=self.export(pose_csv=self.csv,match_mode='pose',on_unmatched='skip')
+        report=self.read_csv(out/'matching_report.csv')
+        self.assertEqual(report[0]['status'],'ambiguous')
+        self.assertEqual(json.loads(report[0]['candidate_csv_rows']),[1,2])
+        self.assertEqual([int(r['source_frame_id']) for r in self.read_csv(out/'poses.csv')],[3,10])
+
+    def test_auto_ambiguity_is_not_guessed(self):
+        self.distinct_poses()
+        self.source[0]=self.source[2];self.source[1]=self.source[2];self.source[2,0]=999
+        np.savetxt(self.csv,self.source,delimiter=',',fmt='%.17g')
+        out=self.export(pose_csv=self.csv,on_unmatched='skip')
+        self.assertEqual(self.read_csv(out/'matching_report.csv')[0]['status'],'ambiguous')
+
+    def test_reused_csv_row_rejects_all_claiming_images(self):
+        self.distinct_poses()
+        label='_'.join(f'{v:.3f}' for v in self.source[2])
+        Image.new('RGB',(8,4)).save(self.data/f'equi_99_{label}.png')
+        out=self.export(pose_csv=self.csv,on_unmatched='skip')
+        rows=self.read_csv(out/'poses.csv')
+        self.assertEqual([int(r['source_frame_id']) for r in rows],[3,10])
+        report=self.read_csv(out/'matching_report.csv')
+        self.assertEqual([int(r['source_frame_id']) for r in report if r['status']=='row_conflict'],[2,99])
+
+    def test_all_unmatched_does_not_export_empty_sequence(self):
+        self.source[:,0]=999
+        np.savetxt(self.csv,self.source,delimiter=',')
+        with self.assertRaisesRegex(ValueError,'At least one matched image'):
+            self.export(pose_csv=self.csv,on_unmatched='skip')
+        self.assertFalse((self.root/'Standard_GT'/'sequence000').exists())
+
     def test_precision_order_copy_and_csv_matrix_agreement(self):
         out=self.export(pose_csv=self.csv)
         with open(out/'poses.csv',newline='') as f:rows=list(csv.DictReader(f))

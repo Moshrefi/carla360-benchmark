@@ -39,6 +39,7 @@ Standard_GT/sequence001/
   poses.csv
   poses_c2w.npy
   metadata.json
+  matching_report.csv
 ```
 
 `poses.csv` contains new and original frame IDs/names, camera position in metres,
@@ -59,6 +60,37 @@ and records that precision limitation. For the most accurate export, use the CSV
 For a step-by-step notebook, install `ipykernel`, select the project interpreter
 in VS Code and open [notebooks/02_build_standard_gt.ipynb](notebooks/02_build_standard_gt.ipynb).
 The callable function is `build_standard_gt.build_standard_gt(...)`.
+
+### Missing images and CSV matching
+
+Deleting images alone is safe: original filename IDs select original CSV rows;
+the remaining images do not need consecutive IDs. Do not renumber source images.
+
+The default `--match-mode auto` first verifies all six filename pose values against
+the indexed CSV row. If that fails or the row is absent, it searches the entire
+CSV for a unique match within 0.00051 per component (metres/degrees, accounting
+for three-decimal filename rounding). It never picks the nearest pose outside
+this tolerance. The exported GT always uses full CSV values.
+
+To skip unmatched or ambiguous images and continue:
+
+```sh
+python build_standard_gt.py --dataset dataset --pose-csv dataset/positions_angles_camera1.csv --output Standard_GT --sequence-id sequence002 --on-unmatched skip
+```
+
+`matching_report.csv` lists every input image, its status, candidate row indices,
+matched row/line and method. `poses.csv` also records `source_csv_row` (zero-based),
+`source_csv_line` (one-based, no header) and `match_method`. The source frame ID
+and matched CSV row are stored separately. Multiple images claiming one CSV row
+are rejected together. Default `--on-unmatched error` stops before publishing if
+any image cannot be matched safely. If all images fail, no sequence is created;
+the error lists the reasons and candidate rows.
+
+If you edited CSV ordering or renumbered source images, use `--match-mode pose`
+to search without trusting filename IDs. Repeated/rounded identical poses can
+make exact frame identity unrecoverable from these fields alone; such matches
+are marked ambiguous. `--match-mode index` preserves strict original-ID matching.
+Search is limited to the supplied CSV; use one capture sequence per input.
 
 ```sh
 python -m unittest discover -s tests -v

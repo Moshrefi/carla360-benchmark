@@ -9,8 +9,22 @@ not infer capture synchronization or re-pair Front/Back frames.
 ## Source and output
 
 Source CSV: headerless `x,y,z,pitch,yaw,roll`, metres and degrees. The index in
-`equi_INDEX_x_y_z_pitch_yaw_roll.png` selects a **zero-based** CSV row. Only
-images present in the input directory are exported, sorted by numeric index.
+`equi_INDEX_x_y_z_pitch_yaw_roll.png` originally selects a **zero-based** CSV row.
+Deleting images does not change this mapping. Default `match_mode=auto` verifies
+all six values at that index, then falls back to searching all CSV rows when
+the index fails. Search requires one unique match within 0.00051 per component;
+it never chooses an arbitrary closest row. `match_mode=pose` ignores original-ID
+assumptions and searches even if the indexed row matches; use it for modified
+CSV ordering/renumbered files. Repeated poses may then be ambiguous.
+
+Only matched images present in the input directory are exported, sorted by
+numeric filename index. Default `on_unmatched=error` stops on uncertain matches;
+`skip` excludes unmatched, ambiguous and shared-row conflicts, recording every
+input in `matching_report.csv`. A completely unmatched input raises an error
+with details and creates no sequence. `poses.csv` stores the actual zero-based
+`source_csv_row`, one-based `source_csv_line`, and `match_method` separately from
+`source_frame_id`. These checks establish pose-value agreement; rounded pose
+values alone cannot prove frame identity when distinct frames share those values.
 CSV values retain their full supplied float64 precision. Filename-only mode
 uses rounded labels and records that limitation. No timestamps are invented.
 
