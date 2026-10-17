@@ -137,6 +137,33 @@ Filename values must agree with that row to three decimal places. Frames may be 
 python run_eval.py --image-dir data/carla360/images --pose-csv data/carla360/positions_angles_camera1.csv --inspect-only --output outputs/inspect01
 ```
 
+## Dataset statistics and visualization
+
+Before inference, explore the full dataset in
+[notebooks/03_dataset_statistics.ipynb](notebooks/03_dataset_statistics.ipynb):
+
+```sh
+python -m pip install -r requirements-analysis.txt
+```
+
+Select that Python environment as the notebook kernel and set `SEQUENCE` to your
+Standard_GT sequence directory (default `standard_GT/city01_route01`, matching
+the current server layout). Run cells in order. This works on CPU and reads pose
+metadata for all frames without loading all images into memory.
+
+The notebook plots 3D/top-view trajectories, world Z, cumulative path length,
+translation in centimetres, SO(3) orientation changes, and source Euler angles.
+It includes an interactive trajectory, frame previews, largest-change pairs,
+circular angle spans, percentile tables, and a multi-sequence comparison table.
+Reports and PNG/PDF/HTML figures are saved under `outputs/dataset_stats/` with a
+unique run name. `pairs.csv` links every motion statistic back to source IDs.
+
+Distances refer to adjacent **retained** frames. Source-ID gaps are flagged and
+consecutive-ID statistics are also reported separately. Circular spans avoid
+false 358-degree ranges for angles near the wrap boundary. World Z is not
+terrain-relative height; no speed or frame rate is inferred without timestamps.
+External datasets need a compatible Standard_GT conversion before comparison.
+
 ## PanoVGGT inference
 
 Use a separate environment per model when dependencies conflict. Install CUDA-enabled PyTorch appropriate to your GPU following https://pytorch.org/get-started/locally/ and the pinned upstream README, then:
