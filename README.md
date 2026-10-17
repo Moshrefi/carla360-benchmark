@@ -4,9 +4,70 @@ Shared ERP dataset loader and model adapters. First integration: PanoVGGT.
 Dataset acquisition is accepted as supplied; images are not altered or re-paired.
 
 ## Status
+- Standard_GT export, unchanged image copies, explicit camera-to-world poses and a standard-sequence loader: implemented and tested.
 - Dataset parsing, numeric frame order, full-precision CSV poses and RGB loading: implemented and smoke-tested.
 - PanoVGGT adapter: implemented against pinned official source; GPU inference not yet run.
 - GT pose metrics and other model adapters: not yet implemented. No benchmark scores claimed.
+
+## Build Standard_GT (CPU, Python 3.10+)
+
+From your local repository terminal in VS Code:
+
+```sh
+git pull --ff-only
+python -m pip install -r requirements-gt.txt
+```
+
+Put the original `equi_*.png` ERP images and `positions_angles_camera1.csv`
+directly in `dataset/`. The CSV has no header and uses `x,y,z,pitch,yaw,roll`.
+
+```sh
+python build_standard_gt.py --dataset dataset --pose-csv dataset/positions_angles_camera1.csv --output Standard_GT --sequence-id sequence001
+```
+
+The exporter reads full-precision poses from the CSV, sorts source frame IDs
+numerically and copies images without changing their bytes. Original files stay
+in place. An existing output sequence is never overwritten; choose a new
+`--sequence-id` for another export. Optional `--map-name` and `--carla-version`
+record capture provenance. Use one input folder and CSV per capture sequence.
+
+```text
+Standard_GT/sequence001/
+  images/000000.png
+  images/000001.png
+  ...
+  poses.csv
+  poses_c2w.npy
+  metadata.json
+```
+
+`poses.csv` contains new and original frame IDs/names, camera position in metres,
+unit quaternion `(qx,qy,qz,qw)`, nine rotation-matrix entries, original source
+poses and image hashes. `poses_c2w.npy` contains float64 camera-to-world matrices
+in the same row order. Metadata documents the axes, image sampling and checks.
+
+**Geometry profile:** this conversion is specific to the supplied MATLAB
+stitching code. The images retain its endpoint-inclusive ERP sampling. World
+axes are `(CARLA X, -CARLA Y, CARLA Z)` and camera axes are `(right, down, forward)`.
+Read the derivation and assumptions in [docs/gt_convention.md](docs/gt_convention.md)
+before using it for a differently generated sequence.
+
+If `--pose-csv` is omitted, the exporter first looks for
+`dataset/positions_angles_camera1.csv`; otherwise it uses rounded filename poses
+and records that precision limitation. For the most accurate export, use the CSV.
+
+For a step-by-step notebook, install `ipykernel`, select the project interpreter
+in VS Code and open [notebooks/02_build_standard_gt.ipynb](notebooks/02_build_standard_gt.ipynb).
+The callable function is `build_standard_gt.build_standard_gt(...)`.
+
+```sh
+python -m unittest discover -s tests -v
+python run_eval.py --standard-sequence Standard_GT/sequence001 --inspect-only --output outputs/standard-inspect01
+```
+
+The same `--standard-sequence` input works with the PanoVGGT adapter below.
+Conversion tests verify geometry formulas and file consistency; they do not
+independently establish capture alignment. Model pose metrics remain a next step.
 
 ## Open in VS Code (Windows PowerShell or Ubuntu)
 

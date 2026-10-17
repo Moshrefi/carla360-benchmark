@@ -8,8 +8,10 @@ from datasets.carla360 import Carla360Dataset
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--image-dir", required=True)
-    p.add_argument("--pose-csv", required=True)
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--image-dir")
+    source.add_argument("--standard-sequence", help="Standard_GT/<sequence_id> directory")
+    p.add_argument("--pose-csv")
     p.add_argument("--output", default="outputs/smoke")
     p.add_argument("--limit", type=int, default=3)
     p.add_argument("--stride", type=int, default=1)
@@ -19,7 +21,15 @@ def main():
     a = p.parse_args()
     if a.limit < 1 or a.stride < 1:
         p.error("limit and stride must be positive")
-    ds = Carla360Dataset(a.image_dir, a.pose_csv)
+    if a.standard_sequence:
+        if a.pose_csv:
+            p.error("--pose-csv is only used with --image-dir")
+        from datasets.standard_gt import StandardGTDataset
+        ds = StandardGTDataset(a.standard_sequence)
+    else:
+        if not a.pose_csv:
+            p.error("--pose-csv is required with --image-dir")
+        ds = Carla360Dataset(a.image_dir, a.pose_csv)
     records = ds.manifest()[::a.stride][:a.limit]
     out = Path(a.output)
     if out.exists() and any(out.iterdir()):
@@ -27,7 +37,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     meta = {"frames":records,"arguments":vars(a),"status":"inputs_ready",
             "gt_columns":["x","y","z","pitch","yaw","roll"],
-            "pose_metrics":"not computed; requires explicit model/ERP coordinate convention"}
+            "pose_metrics":"not computed; model-output convention must be verified"}
+    if a.standard_sequence:
+        meta["gt_convention"] = ds.metadata
+        meta.pop("gt_columns")
     try:
         meta["upstream_commit"] = subprocess.check_output(["git","-C",str(Path(__file__).resolve().parent/"third_party/PanoVGGT"),"rev-parse","HEAD"], text=True).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):

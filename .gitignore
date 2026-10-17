@@ -4,3 +4,5 @@ data/
 checkpoints/
 outputs/
 .ipynb_checkpoints/
+dataset/
+Standard_GT/
