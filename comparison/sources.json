@@ -1,0 +1,5 @@
+{
+  "vggt360": {"url": "https://github.com/Yuanjiayii/VGGT-360.git", "commit": "0d634916b5d5f37e2ebf0a0149f906ad29e492ae", "folder": "VGGT-360"},
+  "omnivggt": {"url": "https://github.com/Livioni/OmniVGGT-official.git", "commit": "c8cbfc6bcd57a07bf08a1f97804da9827847af8c", "folder": "OmniVGGT"},
+  "mapanything": {"url": "https://github.com/facebookresearch/map-anything.git", "commit": "3d10cf7a3016fc0f9bb13a071ee66c47b10be0d9", "folder": "MapAnything"}
+}

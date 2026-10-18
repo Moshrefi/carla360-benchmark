@@ -1,0 +1,11 @@
+numpy<2
+Pillow
+scipy
+opencv-python-headless<5
+huggingface_hub
+safetensors
+einops
+timm
+omegaconf
+tqdm
+matplotlib
