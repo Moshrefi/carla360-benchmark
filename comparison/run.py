@@ -51,7 +51,9 @@ def panovggt(images,checkpoint):
 
 def vggt360(images,out,model_id):
     import torch
-    _,sha=upstream('vggt360')
+    path,sha=upstream('vggt360')
+    from comparison.upstream_fixes import fix_vggt360
+    fix_id=fix_vggt360(path)
     from vggt_visfeat.models.vggt import VGGT
     from vggt_visfeat.utils.load_fn2 import load_and_preprocess_images
     from utils.gen_views import view_generation
@@ -77,7 +79,7 @@ def vggt360(images,out,model_id):
         depths.append(np.asarray(depth,dtype=np.float32))
         np.savez_compressed(out/f'virtual_views_{idx:03d}.npz',view_params=np.asarray(views),pose_enc=numpy(pred['pose_enc']))
         del pred,att,inp
-    return depths,None,{'upstream_commit':sha,'depth_semantics':'official fused norm of world_points; nominal panorama radial distance',
+    return depths,None,{'upstream_commit':sha,'upstream_fixes':[fix_id],'depth_semantics':'official fused norm of world_points; nominal panorama radial distance',
         'scale':'relative; independent gauge per panorama','model_id':model_id,
         'pose_note':'Virtual-view poses saved separately; no temporal trajectory from this per-panorama method',
         'sampling_note':'Official upstream projection/fusion grids retained; small pixel-grid differences from endpoint ERP are possible'}

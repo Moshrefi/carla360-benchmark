@@ -134,3 +134,16 @@ and refusal to overwrite a job. Python syntax and notebook cells are checked.
 Model APIs were inspected against the pinned sources. GPU inference and checkpoint
 loading have NOT been executed in the authoring environment; first server runs
 are integration tests, not pre-verified benchmark results.
+
+## Pinned VGGT-360 import fix
+
+The published attention.py imports `per_image_confidence_minmem` from a missing
+attention_utils.py, but never uses that symbol. Before importing the model,
+the runner removes only that unused import from the local upstream checkout.
+The original file SHA-256 is verified and the absence of symbol usages is checked
+with Python AST. The operation is idempotent and refuses unexpected file contents.
+The applied fix ID is recorded in successful run metadata. No replacement model
+function or attention algorithm is introduced.
+
+If a previous run failed during import, move its incomplete model output folder
+aside before retrying (or choose a new JOB). The input preparation can be reused.
