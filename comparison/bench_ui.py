@@ -75,9 +75,6 @@ def preflight(plan, python):
     subprocess.run([python, '-c', check], cwd=ROOT, check=True)
     rows = []
     for name in plan['selected']:
-        if name == 'argus':
-            rows.append({'model': name, 'status': 'pending checkpoint access; skipped', 'ready': False})
-            continue
         try:
             s = plan['models'][name]
             for key in ('repo', 'checkpoint'):
@@ -91,6 +88,7 @@ def preflight(plan, python):
                 'omnivggt': 'from omnivggt.models.omnivggt import OmniVGGT; from visual_util import load_images_and_cameras; import safetensors',
                 'panovggt': 'from panovggt.models.panovggt_model import PanoVGGTModel; import omegaconf, cv2',
                 'vggt360': 'from comparison.upstream_fixes import fix_vggt360; fix_vggt360(Path(repo)); from vggt_visfeat.models.vggt import VGGT; from utils.gen_views import view_generation',
+                'argus': 'from argus.models.argus import Argus; from argus.utils.pose_enc import pose_encoding_to_extri360; from argus.utils.geometry import unproject_depth_to_world_points; import cv2',
             }[name]
             code = f'import sys; from pathlib import Path; repo={s["repo"]!r}; sys.path.insert(0,repo); ' + imports
             subprocess.run([python, '-c', code], cwd=ROOT, check=True)
@@ -155,9 +153,6 @@ def execute(plan, python, rerun=False, continue_on_error=True):
     statuses = []
     worker_hash = digest(ROOT / 'comparison/bench_infer.py')
     for name in plan['selected']:
-        if name == 'argus':
-            statuses.append({'model': name, 'chunk': None, 'status': 'pending checkpoint access'})
-            continue
         settings = plan['models'][name]
         weight_hash = digest(settings['checkpoint'])
         repo = Path(settings['repo'])
@@ -230,7 +225,7 @@ def depth_plot(plan, chunk_index=0, frame_index=0, normalized=True):
         result = load_result(chunk / name)
         ax.set_title(name)
         if result is None:
-            ax.text(.5, .5, 'Pending checkpoint' if name == 'argus' else 'No completed output', ha='center', transform=ax.transAxes)
+            ax.text(.5, .5, 'No completed output', ha='center', transform=ax.transAxes)
             continue
         arrays, meta = result
         if meta['input_images'] != records:
