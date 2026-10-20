@@ -84,7 +84,13 @@ def diagnose(ds, selected, per_bin, latitude_width):
         except (ValueError, cv2.error) as exc:
             row.update(status="inconclusive", reason=str(exc), matches=0)
         summaries.append(row)
-    return pd.DataFrame(summaries), pd.DataFrame(measurements)
+    summary_columns = ["bin", "frame_i", "frame_j", "baseline_m", "rotation_deg",
+                       "source_id_i", "source_id_j", "pair_id", "status", "matches",
+                       "longitude_sectors", "median_residual_deg", "p95_residual_deg",
+                       "median_raw_motion_deg", "reason"]
+    match_columns = ["pair_id", "frame_i", "frame_j", "u_i", "v_i", "u_j", "v_j",
+                     "longitude_deg", "latitude_deg", "latitude_bin", "raw_motion_deg", "residual_deg"]
+    return pd.DataFrame(summaries, columns=summary_columns), pd.DataFrame(measurements, columns=match_columns)
 
 
 def run(config):
@@ -117,7 +123,7 @@ def run(config):
                   "python": sys.version, "metadata": ds.metadata,
                   "input_files": {p: digest(ds.root/p) for p in ("poses.csv", "poses_c2w.npy", "metadata.json")},
                   "versions": {p: importlib.metadata.version(p) for p in
-                               ("numpy", "scipy", "pandas", "Pillow", "plotly")},
+                               ("numpy", "scipy", "pandas", "Pillow", "plotly", "opencv-python-headless", "kaleido")},
                   "source_sha256": {str(p.relative_to(ROOT)): digest(p)
                       for folder in ("experiments/spherical_geometry", "geometry", "datasets", "analysis", "diagnostics")
                       for p in sorted((ROOT/folder).glob("*.py"))},

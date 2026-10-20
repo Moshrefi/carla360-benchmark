@@ -110,6 +110,29 @@ class SphericalGeometryTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 run(Config(str(sequence), str(output), static_formats=()))
 
+    def test_measured_residual_tables_and_plots(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from experiments.spherical_geometry.run import diagnose
+        from experiments.spherical_geometry.plots import motion_figures
+        p = poses([[0, 0, 0], [1, 0, 0]])
+        ds = SimpleNamespace(paths=["a.png", "b.png"], poses=p)
+        a = np.array([[0., 0, 1], [1., 0, 0]])
+        b = np.array([[-1., 0, 10], [9., 0, 0]])
+        uv = np.array([[4., 2], [6., 2]])
+        selected, _ = select_pairs(p, [0, 2])
+        with patch("diagnostics.rotation_check.image_features", return_value=None), patch(
+                "diagnostics.rotation_check.matched_bearings",
+                return_value=(a, b, uv, uv, (5, 9), (5, 9))):
+            summary, matches = diagnose(ds, selected, 1, 15.)
+        self.assertEqual(summary.iloc[0]["status"], "measured")
+        self.assertEqual(len(matches), 2)
+        assert_allclose(matches.residual_deg, [np.rad2deg(np.arctan(.1)), 0.], atol=1e-12)
+        figures = motion_figures(matches, summary)
+        self.assertEqual(len(figures), 3)
+        for fig in figures.values():
+            self.assertGreater(len(fig.to_json()), 100)
+
     def test_static_export(self):
         with tempfile.TemporaryDirectory() as temp:
             _, lon, lat, area = spherical_grid(5, 9)

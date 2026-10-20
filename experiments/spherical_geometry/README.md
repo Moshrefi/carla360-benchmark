@@ -127,3 +127,12 @@ Not implemented. After Phase 1 validation and PR review:
 5. Compute depth and latitude error profiles only with valid, co-registered GT,
    validity masks and spherical-area weighting. Unknown GT means unavailable.
 6. Add actual scene-distance strata, ERP depth maps and model comparisons.
+
+## Regression validation
+
+CI runs the new analytical/integration tests independently, then runs the full
+suite on both the audited base and the branch. New failures or changed skips
+fail CI. Existing base failures are printed explicitly rather than silently
+skipped. The baseline test named test_argus_never_launches_process predates the
+Argus integration and still expects pending behavior; it may fail on main.
+The baseline comparison checks this empirically and does not change that pipeline.

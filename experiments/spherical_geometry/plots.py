@@ -60,6 +60,8 @@ def motion_figures(matches, summaries):
         # Sparse samples only: never interpolate unobserved pixels into a dense map.
         style(fig, "Sparse rotation-compensated residuals — tentative feature matches")
         fig.update_layout(height=max(580, 300*int(np.ceil(matches.pair_id.nunique()/3))))
+        fig.update_xaxes(range=[-180, 180])
+        fig.update_yaxes(range=[-90, 90])
         figures["sparse_parallax_map"] = fig
         grouped = matches.groupby("latitude_bin", observed=True).agg(
             latitude_deg=("latitude_deg", "mean"), residual_deg=("residual_deg", "median"),
