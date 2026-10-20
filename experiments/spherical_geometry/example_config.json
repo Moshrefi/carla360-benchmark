@@ -1,0 +1,26 @@
+{
+  "sequence": "Standard_GT/city01_route01",
+  "output": "outputs/spherical_geometry/phase1_001",
+  "baseline_edges_m": [
+    0,
+    0.01,
+    0.1,
+    0.5,
+    1,
+    2,
+    5,
+    10
+  ],
+  "pairs_per_bin": 10,
+  "seed": 17,
+  "max_rotation_deg": 180,
+  "image_diagnostics": true,
+  "diagnostic_pairs_per_bin": 2,
+  "latitude_bin_width_deg": 15,
+  "grid_height": 181,
+  "grid_width": 361,
+  "static_formats": [
+    "png",
+    "pdf"
+  ]
+}

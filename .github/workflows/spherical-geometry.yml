@@ -1,0 +1,32 @@
+name: Spherical geometry Phase 1
+on:
+  push:
+    branches: ["experiments/spherical-geometry-phase1"]
+  pull_request:
+    paths:
+      - "experiments/**"
+      - "notebooks/10_spherical_geometry_phase1.ipynb"
+      - "tests/**"
+      - "geometry/**"
+      - "datasets/**"
+      - "analysis/**"
+      - "diagnostics/**"
+      - ".github/workflows/spherical-geometry.yml"
+permissions:
+  contents: read
+jobs:
+  cpu-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: experiments/spherical_geometry/requirements.txt
+      - run: python -m pip install -r experiments/spherical_geometry/requirements.txt
+      - name: Existing regression tests and analytical geometry tests
+        run: python -m unittest discover -s tests -v
+      - name: Execute the analysis notebook with an explicitly synthetic fixture
+        run: python experiments/spherical_geometry/validate_notebook.py

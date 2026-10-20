@@ -1,0 +1,12 @@
+# CPU-only validation environment; Python 3.11.
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.3
+Pillow==10.4.0
+plotly==5.24.1
+kaleido==0.2.1
+opencv-python-headless==4.10.0.84
+nbformat==5.10.4
+nbclient==0.10.0
+ipykernel==6.29.5
+matplotlib==3.9.2
